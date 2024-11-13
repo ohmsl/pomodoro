@@ -1,21 +1,17 @@
-import { useState } from "react";
+import { useTimerStore } from "@/stores/timerStore";
 import { Button } from "../ui/button";
 
 export function TimerControls() {
-  const [isRunning, setIsRunning] = useState(false);
-
-  const handleStartPause = () => setIsRunning(!isRunning);
-  const handleReset = () => {
-    setIsRunning(false);
-    // Reset logic here
-  };
+  const { isRunning, startTimer, stopTimer, resetTimer } = useTimerStore();
 
   return (
     <div className="flex space-x-4">
-      <Button onClick={handleStartPause}>
+      <Button onClick={isRunning ? stopTimer : startTimer}>
         {isRunning ? "Pause" : "Start"}
       </Button>
-      <Button onClick={handleReset}>Reset</Button>
+      <Button onClick={resetTimer} variant="secondary">
+        Reset
+      </Button>
     </div>
   );
 }

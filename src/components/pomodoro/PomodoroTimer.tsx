@@ -1,11 +1,11 @@
-import { TimerSelector } from "./TimerSelector";
+import { Timer } from "./Timer";
+import { TimerControls } from "./TimerControls";
 
 const PomodoroTimer = () => {
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen overflow-hidden">
-      {/* <Timer /> */}
-      {/* <TimerControls /> */}
-      <TimerSelector onTimeChange={console.log} />
+    <main className="fixed w-full h-full flex flex-col items-center justify-center overflow-hidden">
+      <Timer />
+      <TimerControls />
     </main>
   );
 };

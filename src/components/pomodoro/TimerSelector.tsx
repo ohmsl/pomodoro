@@ -3,6 +3,7 @@ import { InfinityIcon } from "lucide-react";
 import React, { useRef, useState } from "react";
 import type SwiperType from "swiper";
 import "swiper/css";
+import { FreeMode } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 type TimerSelectorProps = {
@@ -60,7 +61,7 @@ export const TimerSelector: React.FC<TimerSelectorProps> = ({
             swiper.slides.forEach((slide) => {
               const progress = (slide as any).progress;
 
-              const numberScale = 1.2 - Math.abs(progress) * 0.3;
+              const numberScale = 1.3 - Math.abs(progress) * 0.3;
               const numberOpacity = 1 - Math.abs(progress) * 1;
 
               const numberElement = slide.querySelector(
@@ -76,17 +77,18 @@ export const TimerSelector: React.FC<TimerSelectorProps> = ({
             });
           }}
           slideToClickedSlide={true}
-          resistanceRatio={0.7}
-          //   freeMode={{
-          //     enabled: true,
-          //     minimumVelocity: 0.02,
-          //     momentum: true,
-          //     momentumBounce: true,
-          //     momentumBounceRatio: 1,
-          //     momentumRatio: 1,
-          //     momentumVelocityRatio: 1,
-          //     sticky: false,
-          //   }}
+          resistanceRatio={0.8}
+          freeMode={{
+            enabled: true,
+            minimumVelocity: 0.15,
+            momentum: true,
+            momentumBounce: true,
+            momentumBounceRatio: 1,
+            momentumRatio: 0.8,
+            momentumVelocityRatio: 1,
+            sticky: true,
+          }}
+          modules={[FreeMode]}
         >
           {[...Array(NUM_MARKERS)].map((_, index) => {
             const time = index * 5;

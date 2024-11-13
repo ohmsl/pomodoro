@@ -1,14 +1,20 @@
+import { useTimerStore } from "@/stores/timerStore";
 import { useEffect, useState } from "react";
+import { TimerSelectorDialog } from "./TimerSelectorDialog";
 
 export function Timer() {
-  const [timeLeft, setTimeLeft] = useState(1500);
+  const { timeLeft, isRunning, tick } = useTimerStore();
+  const [timeSelectDialogOpen, setTimeSelectDialogOpen] = useState(false);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+    let interval: NodeJS.Timeout | null = null;
+    if (isRunning) {
+      interval = setInterval(() => tick(), 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isRunning, tick]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -18,5 +24,18 @@ export function Timer() {
       .padStart(2, "0")}`;
   };
 
-  return <div className="text-6xl font-mono mb-6">{formatTime(timeLeft)}</div>;
+  return (
+    <>
+      <TimerSelectorDialog
+        open={timeSelectDialogOpen}
+        onClose={() => setTimeSelectDialogOpen(false)}
+      />
+      <div
+        className="text-7xl font-bold mb-6 cursor-pointer"
+        onClick={() => setTimeSelectDialogOpen(true)}
+      >
+        {formatTime(timeLeft)}
+      </div>
+    </>
+  );
 }
