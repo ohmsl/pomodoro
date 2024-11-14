@@ -3,7 +3,7 @@ import { TimerControls } from "./TimerControls";
 
 const PomodoroTimer = () => {
   return (
-    <main className="fixed w-full h-full flex flex-col items-center justify-center overflow-hidden">
+    <main className="min-h-screen flex flex-col items-center justify-center overflow-hidden">
       <Timer />
       <TimerControls />
     </main>

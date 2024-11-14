@@ -1,20 +1,10 @@
 import { useTimerStore } from "@/stores/timerStore";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TimerSelectorDialog } from "./TimerSelectorDialog";
 
 export function Timer() {
-  const { timeLeft, isRunning, tick } = useTimerStore();
+  const { timeLeft } = useTimerStore();
   const [timeSelectDialogOpen, setTimeSelectDialogOpen] = useState(false);
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    if (isRunning) {
-      interval = setInterval(() => tick(), 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, tick]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
