@@ -21,7 +21,8 @@ export function Timer() {
         onClose={() => setTimeSelectDialogOpen(false)}
       />
       <div
-        className="text-7xl font-bold mb-6 cursor-pointer"
+        className="text-8xl
+        font-bold mb-6 cursor-pointer"
         onClick={() => setTimeSelectDialogOpen(true)}
       >
         {formatTime(timeLeft)}
