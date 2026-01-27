@@ -46,6 +46,7 @@ interface TimerState {
   skipPhase: () => void;
   toggleNotifications: () => void;
   toggleHaptics: () => void;
+  setCyclesBeforeLongBreak: (cycles: number) => void;
 }
 
 export const useTimerStore = create<TimerState>(
@@ -299,6 +300,11 @@ export const useTimerStore = create<TimerState>(
         set((state: TimerState) => ({
           hapticsEnabled: !state.hapticsEnabled,
         }));
+      },
+
+      setCyclesBeforeLongBreak: (cycles: number) => {
+        const sanitized = Math.max(1, Math.min(8, Math.round(cycles)));
+        set({ cyclesBeforeLongBreak: sanitized });
       },
     }),
     {

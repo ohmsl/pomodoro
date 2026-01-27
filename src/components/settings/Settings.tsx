@@ -55,6 +55,12 @@ const Settings = ({ onClose }: { onClose: () => void }) => {
   const hapticsEnabled = useTimerStore((state) => state.hapticsEnabled);
   const toggleHaptics = useTimerStore((state) => state.toggleHaptics);
   const { requestNotificationPermission } = useNotification();
+  const cyclesBeforeLongBreak = useTimerStore(
+    (state) => state.cyclesBeforeLongBreak
+  );
+  const setCyclesBeforeLongBreak = useTimerStore(
+    (state) => state.setCyclesBeforeLongBreak
+  );
 
   const handleThemeChange = (mode: Theme) => {
     setTheme(mode);
@@ -120,6 +126,47 @@ const Settings = ({ onClose }: { onClose: () => void }) => {
             onToggle={toggleHaptics}
             icon={<Vibrate className="h-4 w-4" />}
           />
+        </section>
+
+        <section className="space-y-4">
+          <SectionLabel>Long Break</SectionLabel>
+          <div className="flex items-center justify-between rounded-xl border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                After cycles
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Start a long break after this many focus sessions.
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() =>
+                  setCyclesBeforeLongBreak(cyclesBeforeLongBreak - 1)
+                }
+                disabled={cyclesBeforeLongBreak <= 1}
+                aria-label="Decrease cycles before long break"
+              >
+                –
+              </Button>
+              <div className="w-10 text-center text-lg font-semibold">
+                {cyclesBeforeLongBreak}
+              </div>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() =>
+                  setCyclesBeforeLongBreak(cyclesBeforeLongBreak + 1)
+                }
+                disabled={cyclesBeforeLongBreak >= 8}
+                aria-label="Increase cycles before long break"
+              >
+                +
+              </Button>
+            </div>
+          </div>
         </section>
       </div>
       <p className="text-xs text-muted-foreground">
