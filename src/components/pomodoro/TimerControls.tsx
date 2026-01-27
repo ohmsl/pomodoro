@@ -16,6 +16,7 @@ export function TimerControls() {
   );
   const hapticsEnabled = useTimerStore((state) => state.hapticsEnabled);
   const toggleHaptics = useTimerStore((state) => state.toggleHaptics);
+  const skipPhase = useTimerStore((state) => state.skipPhase);
   const { requestNotificationPermission } = useNotification();
 
   const handleNotificationsToggle = async () => {
@@ -38,6 +39,9 @@ export function TimerControls() {
         </Button>
         <Button onClick={resetTimer} variant="secondary">
           Reset
+        </Button>
+        <Button onClick={skipPhase} variant="ghost">
+          Skip
         </Button>
       </div>
       <div className="flex items-center space-x-2 text-xs text-muted-foreground">

@@ -43,6 +43,7 @@ interface TimerState {
   resetTimer: () => void;
   resumeTicking: () => void;
   completePhase: () => void;
+  skipPhase: () => void;
   toggleNotifications: () => void;
   toggleHaptics: () => void;
 }
@@ -181,7 +182,7 @@ export const useTimerStore = create<TimerState>(
         });
       },
 
-      completePhase: () => {
+      completePhase: ({ skip = false }: { skip?: boolean } = {}) => {
         const {
           currentPhase,
           completedFocusSessions,
@@ -191,7 +192,7 @@ export const useTimerStore = create<TimerState>(
         } = get();
 
         const updatedFocusSessions =
-          currentPhase === "focus"
+          currentPhase === "focus" && !skip
             ? completedFocusSessions + 1
             : completedFocusSessions;
 
@@ -222,6 +223,16 @@ export const useTimerStore = create<TimerState>(
             }
           });
         }
+      },
+
+      skipPhase: () => {
+        const completePhase = get().completePhase;
+        set({
+          isRunning: false,
+          startTimestamp: null,
+          timeLeft: 0,
+        });
+        completePhase({ skip: true });
       },
 
       resumeTicking: () => {
