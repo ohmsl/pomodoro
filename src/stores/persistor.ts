@@ -23,7 +23,10 @@ export const createPersistMiddleware = <T extends object>(
       // save the new state to storage
       (async () => {
         try {
-          const store = await load("store.json", { autoSave: true });
+          const store = await load("store.json", {
+            autoSave: true,
+            defaults: {},
+          });
           const stateToSave = { ...get(), _persistVersion: version };
           store.set(name, stateToSave);
           await store.save();
@@ -39,7 +42,10 @@ export const createPersistMiddleware = <T extends object>(
     // load persisted state and merge it
     (async () => {
       try {
-        const store = await load("store.json", { autoSave: true });
+        const store = await load("store.json", {
+          autoSave: true,
+          defaults: {},
+        });
         const persistedState = (await store.get(name)) as any;
 
         if (persistedState) {

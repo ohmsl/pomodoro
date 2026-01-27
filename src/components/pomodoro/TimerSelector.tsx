@@ -1,6 +1,6 @@
 import { impactFeedback } from "@tauri-apps/plugin-haptics";
 import { InfinityIcon } from "lucide-react";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type SwiperType from "swiper";
 import "swiper/css";
 import { FreeMode } from "swiper/modules";
@@ -21,6 +21,13 @@ export const TimerSelector: React.FC<TimerSelectorProps> = ({
   const [lastHapticInterval, setLastHapticInterval] = useState<number | null>(
     null
   );
+
+  useEffect(() => {
+    setSelectedMinutes(defaultMinutes);
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(defaultMinutes / 5, 0);
+    }
+  }, [defaultMinutes]);
 
   const handleSwiperInit = (swiper: SwiperType) => {
     swiperRef.current = swiper;

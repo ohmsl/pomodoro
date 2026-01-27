@@ -1,29 +1,95 @@
 import { create } from "zustand";
 import { createPersistMiddleware } from "./persistor";
 
+export type Phase = "focus" | "shortBreak" | "longBreak";
+
+const defaultPhaseDurations: Record<Phase, number> = {
+  focus: 25 * 60,
+  shortBreak: 5 * 60,
+  longBreak: 15 * 60,
+};
+
+const determineNextPhase = (
+  currentPhase: Phase,
+  completedFocusSessions: number,
+  cyclesBeforeLongBreak: number
+): Phase => {
+  if (currentPhase === "focus") {
+    return completedFocusSessions % cyclesBeforeLongBreak === 0
+      ? "longBreak"
+      : "shortBreak";
+  }
+
+  return "focus";
+};
+
 interface TimerState {
   duration: number;
   timeLeft: number;
   isRunning: boolean;
   startTimestamp: number | null;
+  currentPhase: Phase;
+  phaseDurations: Record<Phase, number>;
+  cyclesBeforeLongBreak: number;
+  completedFocusSessions: number;
+  autoStartNextPhase: boolean;
   setDuration: (minutes: number) => void;
+  setPhaseDuration: (phase: Phase, minutes: number) => void;
+  setCurrentPhase: (phase: Phase) => void;
   startTimer: () => void;
   stopTimer: () => void;
   resetTimer: () => void;
   resumeTicking: () => void;
+  completePhase: () => void;
 }
 
 export const useTimerStore = create<TimerState>(
   createPersistMiddleware(
     (set, get) => ({
-      duration: 1500,
-      timeLeft: 1500,
+      duration: defaultPhaseDurations.focus,
+      timeLeft: defaultPhaseDurations.focus,
       isRunning: false,
       startTimestamp: null,
+      currentPhase: "focus",
+      phaseDurations: { ...defaultPhaseDurations },
+      cyclesBeforeLongBreak: 4,
+      completedFocusSessions: 0,
+      autoStartNextPhase: true,
 
-      setDuration: (minutes) => {
-        const seconds = minutes * 60;
-        set({ duration: seconds, timeLeft: seconds, startTimestamp: null });
+      setDuration: (minutes: number) => {
+        const currentPhase = get().currentPhase;
+        get().setPhaseDuration(currentPhase, minutes);
+      },
+
+      setPhaseDuration: (phase: Phase, minutes: number) => {
+        const seconds = Math.max(minutes * 60, 0);
+        set((state: TimerState) => {
+          const updatedDurations = {
+            ...state.phaseDurations,
+            [phase]: seconds,
+          };
+
+          const shouldSyncCurrentPhase =
+            phase === state.currentPhase && !state.isRunning;
+
+          return {
+            phaseDurations: updatedDurations,
+            duration: shouldSyncCurrentPhase ? seconds : state.duration,
+            timeLeft: shouldSyncCurrentPhase ? seconds : state.timeLeft,
+            startTimestamp: shouldSyncCurrentPhase ? null : state.startTimestamp,
+          };
+        });
+      },
+
+      setCurrentPhase: (phase: Phase) => {
+        const phaseDuration = get().phaseDurations[phase];
+        set({
+          currentPhase: phase,
+          duration: phaseDuration,
+          timeLeft: phaseDuration,
+          isRunning: false,
+          startTimestamp: null,
+        });
       },
 
       startTimer: () => {
@@ -41,7 +107,7 @@ export const useTimerStore = create<TimerState>(
             if (get().isRunning) {
               set({
                 timeLeft: Math.round(
-                  (Date.now() - get().startTimestamp!) / 1000
+                  (Date.now() - (get().startTimestamp ?? currentTimestamp)) / 1000
                 ),
               });
               requestAnimationFrame(tick);
@@ -69,6 +135,7 @@ export const useTimerStore = create<TimerState>(
 
               if (remainingTime <= 0) {
                 set({ isRunning: false });
+                get().completePhase();
               } else {
                 requestAnimationFrame(tick);
               }
@@ -98,17 +165,61 @@ export const useTimerStore = create<TimerState>(
       },
 
       resetTimer: () => {
-        const { duration } = get();
+        const { currentPhase, phaseDurations } = get();
+        const phaseDuration = phaseDurations[currentPhase];
         set({
-          timeLeft: duration,
+          timeLeft: phaseDuration,
+          duration: phaseDuration,
           isRunning: false,
           startTimestamp: null,
         });
       },
 
+      completePhase: () => {
+        const {
+          currentPhase,
+          completedFocusSessions,
+          cyclesBeforeLongBreak,
+          phaseDurations,
+          autoStartNextPhase,
+        } = get();
+
+        const updatedFocusSessions =
+          currentPhase === "focus"
+            ? completedFocusSessions + 1
+            : completedFocusSessions;
+
+        const nextPhase = determineNextPhase(
+          currentPhase,
+          currentPhase === "focus"
+            ? updatedFocusSessions
+            : completedFocusSessions,
+          cyclesBeforeLongBreak
+        );
+
+        const nextDuration = phaseDurations[nextPhase];
+
+        set({
+          completedFocusSessions: updatedFocusSessions,
+          currentPhase: nextPhase,
+          duration: nextDuration,
+          timeLeft: nextDuration,
+          startTimestamp: null,
+          isRunning: false,
+        });
+
+        if (autoStartNextPhase) {
+          // Start the next phase automatically after state settles.
+          requestAnimationFrame(() => {
+            if (get().timeLeft === nextDuration) {
+              get().startTimer();
+            }
+          });
+        }
+      },
+
       resumeTicking: () => {
         const { isRunning, startTimestamp, duration } = get();
-        console.log("Resuming ticking...", get());
         if (isRunning && startTimestamp) {
           const currentTime = Date.now();
 
@@ -120,7 +231,9 @@ export const useTimerStore = create<TimerState>(
             const tick = () => {
               if (get().isRunning) {
                 set({
-                  timeLeft: Math.round((Date.now() - startTimestamp) / 1000),
+                  timeLeft: Math.round(
+                    (Date.now() - (get().startTimestamp ?? startTimestamp)) / 1000
+                  ),
                 });
                 requestAnimationFrame(tick);
               }
@@ -140,14 +253,15 @@ export const useTimerStore = create<TimerState>(
               const { isRunning } = get();
 
               if (isRunning) {
-                const remainingTime = Math.max(
+                const newRemainingTime = Math.max(
                   0,
                   Math.round((endTime - Date.now()) / 1000)
                 );
-                set({ timeLeft: remainingTime });
+                set({ timeLeft: newRemainingTime });
 
-                if (remainingTime <= 0) {
+                if (newRemainingTime <= 0) {
                   set({ isRunning: false });
+                  get().completePhase();
                 } else {
                   requestAnimationFrame(tick);
                 }
@@ -161,7 +275,37 @@ export const useTimerStore = create<TimerState>(
     }),
     {
       name: "timerState",
-      version: 1,
+      version: 2,
+      migrate: (persistedState: any, persistedVersion?: number) => {
+        if (!persistedVersion || persistedVersion < 2) {
+          const focusDuration =
+            typeof persistedState?.duration === "number"
+              ? persistedState.duration
+              : defaultPhaseDurations.focus;
+
+          const focusTimeLeft =
+            typeof persistedState?.timeLeft === "number"
+              ? persistedState.timeLeft
+              : focusDuration;
+
+          return {
+            ...persistedState,
+            duration: focusDuration,
+            timeLeft: focusTimeLeft,
+            currentPhase: "focus",
+            phaseDurations: {
+              focus: focusDuration,
+              shortBreak: defaultPhaseDurations.shortBreak,
+              longBreak: defaultPhaseDurations.longBreak,
+            },
+            completedFocusSessions: 0,
+            autoStartNextPhase: true,
+            cyclesBeforeLongBreak: 4,
+          };
+        }
+
+        return persistedState;
+      },
       onRehydrate: (state, api) => {
         if (state.isRunning && api.getState().resumeTicking) {
           api.getState().resumeTicking();
@@ -170,3 +314,5 @@ export const useTimerStore = create<TimerState>(
     }
   )
 );
+
+export { determineNextPhase };
