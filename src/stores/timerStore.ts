@@ -33,6 +33,8 @@ interface TimerState {
   cyclesBeforeLongBreak: number;
   completedFocusSessions: number;
   autoStartNextPhase: boolean;
+  notificationsEnabled: boolean;
+  hapticsEnabled: boolean;
   setDuration: (minutes: number) => void;
   setPhaseDuration: (phase: Phase, minutes: number) => void;
   setCurrentPhase: (phase: Phase) => void;
@@ -41,6 +43,8 @@ interface TimerState {
   resetTimer: () => void;
   resumeTicking: () => void;
   completePhase: () => void;
+  toggleNotifications: () => void;
+  toggleHaptics: () => void;
 }
 
 export const useTimerStore = create<TimerState>(
@@ -55,6 +59,8 @@ export const useTimerStore = create<TimerState>(
       cyclesBeforeLongBreak: 4,
       completedFocusSessions: 0,
       autoStartNextPhase: true,
+      notificationsEnabled: true,
+      hapticsEnabled: true,
 
       setDuration: (minutes: number) => {
         const currentPhase = get().currentPhase;
@@ -272,10 +278,21 @@ export const useTimerStore = create<TimerState>(
           }
         }
       },
+      toggleNotifications: () => {
+        set((state: TimerState) => ({
+          notificationsEnabled: !state.notificationsEnabled,
+        }));
+      },
+
+      toggleHaptics: () => {
+        set((state: TimerState) => ({
+          hapticsEnabled: !state.hapticsEnabled,
+        }));
+      },
     }),
     {
       name: "timerState",
-      version: 2,
+      version: 3,
       migrate: (persistedState: any, persistedVersion?: number) => {
         if (!persistedVersion || persistedVersion < 2) {
           const focusDuration =
@@ -301,6 +318,14 @@ export const useTimerStore = create<TimerState>(
             completedFocusSessions: 0,
             autoStartNextPhase: true,
             cyclesBeforeLongBreak: 4,
+          };
+        }
+
+        if (persistedVersion && persistedVersion < 3) {
+          return {
+            ...persistedState,
+            notificationsEnabled: true,
+            hapticsEnabled: true,
           };
         }
 

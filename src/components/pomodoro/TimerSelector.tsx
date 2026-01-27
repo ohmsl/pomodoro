@@ -1,4 +1,4 @@
-import { impactFeedback } from "@tauri-apps/plugin-haptics";
+import { triggerImpactFeedback } from "@/lib/haptics";
 import { InfinityIcon } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import type SwiperType from "swiper";
@@ -43,7 +43,7 @@ export const TimerSelector: React.FC<TimerSelectorProps> = ({
     const interval = Math.round(progress * 100);
     if (interval !== lastHapticInterval) {
       setLastHapticInterval(interval);
-      impactFeedback("light");
+      void triggerImpactFeedback("light");
     }
   };
 
@@ -63,7 +63,7 @@ export const TimerSelector: React.FC<TimerSelectorProps> = ({
           onProgress={(swiper, progress) => {
             handleNotchHapticFeedback(progress);
             if (Math.abs(progress) % 1 === 0) {
-              impactFeedback("rigid");
+              void triggerImpactFeedback("rigid");
             }
             swiper.slides.forEach((slide) => {
               const progress = (slide as any).progress;
