@@ -1,6 +1,7 @@
 // persistor.ts
 import { load } from "@tauri-apps/plugin-store";
 import { StateCreator, StoreApi } from "zustand";
+import { isTauriEnvironment } from "@/lib/platform";
 
 interface PersistOptions<T extends object> {
   name: string;
@@ -16,6 +17,49 @@ export const createPersistMiddleware = <T extends object>(
 ): StateCreator<T> => {
   return (set, get, api) => {
     const { name, version, migrate, merge, onRehydrate } = options;
+    const storageKey = "store.json";
+
+    const loadStorage = async () => {
+      if (isTauriEnvironment()) {
+        return load(storageKey, {
+          autoSave: true,
+          defaults: {},
+        });
+      }
+
+      return {
+        async get(key: string) {
+          if (typeof window === "undefined") return undefined;
+          const raw = localStorage.getItem(storageKey);
+          if (!raw) return undefined;
+          try {
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            return parsed[key];
+          } catch (error) {
+            console.warn("Failed to parse local storage state", error);
+            return undefined;
+          }
+        },
+        set(key: string, value: unknown) {
+          if (typeof window === "undefined") return;
+          const raw = localStorage.getItem(storageKey);
+          let parsed: Record<string, unknown> = {};
+          if (raw) {
+            try {
+              parsed = JSON.parse(raw) as Record<string, unknown>;
+            } catch (error) {
+              console.warn("Failed to parse local storage state", error);
+              parsed = {};
+            }
+          }
+          parsed[key] = value;
+          localStorage.setItem(storageKey, JSON.stringify(parsed));
+        },
+        async save() {
+          return;
+        },
+      };
+    };
 
     const setState: typeof set = (partial, replace) => {
       set(partial as any, replace as any);
@@ -23,10 +67,7 @@ export const createPersistMiddleware = <T extends object>(
       // save the new state to storage
       (async () => {
         try {
-          const store = await load("store.json", {
-            autoSave: true,
-            defaults: {},
-          });
+          const store = await loadStorage();
           const stateToSave = { ...get(), _persistVersion: version };
           store.set(name, stateToSave);
           await store.save();
@@ -42,10 +83,7 @@ export const createPersistMiddleware = <T extends object>(
     // load persisted state and merge it
     (async () => {
       try {
-        const store = await load("store.json", {
-          autoSave: true,
-          defaults: {},
-        });
+        const store = await loadStorage();
         const persistedState = (await store.get(name)) as any;
 
         if (persistedState) {
